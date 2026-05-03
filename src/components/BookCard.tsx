@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import type { Book, ReadingStatus } from '../types/book';
 import { READING_STATUS_LABELS } from '../types/book';
 
@@ -23,6 +23,7 @@ const getStatusColor = (status: ReadingStatus): string => {
 
 function BookCard({ book, onDelete, onUpdateStatus }: BookCardProps) {
   const [showStatusSelector, setShowStatusSelector] = useState(false);
+  const statusContainerRef = useRef<HTMLDivElement>(null);
 
   const formatDate = (timestamp: number): string => {
     const date = new Date(timestamp);
@@ -37,6 +38,30 @@ function BookCard({ book, onDelete, onUpdateStatus }: BookCardProps) {
     onUpdateStatus(book.id, newStatus);
     setShowStatusSelector(false);
   };
+
+  const handleStatusBadgeClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowStatusSelector(!showStatusSelector);
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        statusContainerRef.current && 
+        !statusContainerRef.current.contains(event.target as Node)
+      ) {
+        setShowStatusSelector(false);
+      }
+    };
+
+    if (showStatusSelector) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showStatusSelector]);
 
   return (
     <div className="book-card">
@@ -63,10 +88,10 @@ function BookCard({ book, onDelete, onUpdateStatus }: BookCardProps) {
         <span className="create-date">
           添加时间：{formatDate(book.createdAt)}
         </span>
-        <div className="status-container">
+        <div className="status-container" ref={statusContainerRef}>
           <button
             className={`status-badge ${getStatusColor(book.status)}`}
-            onClick={() => setShowStatusSelector(!showStatusSelector)}
+            onClick={handleStatusBadgeClick}
             aria-label="切换阅读状态"
           >
             {READING_STATUS_LABELS[book.status]}

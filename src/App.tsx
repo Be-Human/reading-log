@@ -139,8 +139,17 @@ function App() {
 
             {sortedBooks.length === 0 ? (
               <div className="empty-state">
-                <p>还没有添加任何书籍</p>
-                <p className="empty-hint">在左侧表单中添加你的第一本书吧！</p>
+                {books.length === 0 ? (
+                  <>
+                    <p>还没有添加任何书籍</p>
+                    <p className="empty-hint">在左侧表单中添加你的第一本书吧！</p>
+                  </>
+                ) : (
+                  <>
+                    <p>该状态下暂无书籍</p>
+                    <p className="empty-hint">当前筛选的「{filterStatus !== 'all' ? READING_STATUS_LABELS[filterStatus] : '全部'}」状态下没有书籍</p>
+                  </>
+                )}
               </div>
             ) : (
               <div className="books-grid">
