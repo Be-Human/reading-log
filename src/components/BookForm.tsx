@@ -11,6 +11,7 @@ function BookForm({ onAddBook }: BookFormProps) {
   const [title, setTitle] = useState('');
   const [author, setAuthor] = useState('');
   const [description, setDescription] = useState('');
+  const [totalPages, setTotalPages] = useState('');
   const [status, setStatus] = useState<ReadingStatus>('want');
   const [titleError, setTitleError] = useState(false);
 
@@ -22,11 +23,15 @@ function BookForm({ onAddBook }: BookFormProps) {
       return;
     }
     
+    const parsedTotalPages = totalPages ? parseInt(totalPages, 10) : undefined;
+    
     const newBook: Book = {
       id: generateId(),
       title: title.trim(),
       author: author.trim() || undefined,
       description: description.trim() || undefined,
+      totalPages: parsedTotalPages,
+      currentPage: parsedTotalPages && status === 'read' ? parsedTotalPages : 0,
       createdAt: Date.now(),
       status
     };
@@ -36,6 +41,7 @@ function BookForm({ onAddBook }: BookFormProps) {
     setTitle('');
     setAuthor('');
     setDescription('');
+    setTotalPages('');
     setStatus('want');
     setTitleError(false);
   };
@@ -83,6 +89,18 @@ function BookForm({ onAddBook }: BookFormProps) {
             onChange={(e) => setDescription(e.target.value)}
             placeholder="请输入简介（可选）"
             rows={3}
+          />
+        </div>
+        
+        <div className="form-group">
+          <label htmlFor="totalPages">总页数</label>
+          <input
+            type="number"
+            id="totalPages"
+            value={totalPages}
+            onChange={(e) => setTotalPages(e.target.value)}
+            placeholder="请输入总页数（可选）"
+            min="1"
           />
         </div>
         

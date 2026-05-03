@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import BookForm from './components/BookForm';
 import BookCard from './components/BookCard';
 import ConfirmDialog from './components/ConfirmDialog';
+import EditBookDialog from './components/EditBookDialog';
 import type { Book, ReadingStatus } from './types/book';
 import { READING_STATUS_LABELS } from './types/book';
 import { saveBooks, loadBooks } from './utils/localStorage';
@@ -14,12 +15,25 @@ function App() {
     const savedBooks = loadBooks();
     return savedBooks.map(book => ({
       ...book,
-      status: (book as any).status || 'want'
+      status: (book as any).status || 'want',
+      currentPage: (book as any).currentPage || 0
     }));
   });
   const [dialogOpen, setDialogOpen] = useState(false);
   const [bookToDelete, setBookToDelete] = useState<Book | null>(null);
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [bookToEdit, setBookToEdit] = useState<Book | null>(null);
+
+  const handleEditClick = (book: Book) => {
+    setBookToEdit(book);
+    setEditDialogOpen(true);
+  };
+
+  const handleCancelEdit = () => {
+    setEditDialogOpen(false);
+    setBookToEdit(null);
+  };
 
   useEffect(() => {
     saveBooks(books);
@@ -52,9 +66,35 @@ function App() {
 
   const handleUpdateStatus = (bookId: string, newStatus: ReadingStatus) => {
     setBooks((prevBooks) => 
+      prevBooks.map(book => {
+        if (book.id === bookId) {
+          const updatedBook: Book = { ...book, status: newStatus };
+          // 当状态切换为「已读」时，自动将当前页同步为总页数
+          if (newStatus === 'read' && book.totalPages) {
+            updatedBook.currentPage = book.totalPages;
+          }
+          return updatedBook;
+        }
+        return book;
+      })
+    );
+  };
+
+  const handleUpdateCurrentPage = (bookId: string, currentPage: number) => {
+    setBooks((prevBooks) => 
       prevBooks.map(book => 
         book.id === bookId 
-          ? { ...book, status: newStatus }
+          ? { ...book, currentPage }
+          : book
+      )
+    );
+  };
+
+  const handleEditBook = (updatedBook: Book) => {
+    setBooks((prevBooks) => 
+      prevBooks.map(book => 
+        book.id === updatedBook.id 
+          ? updatedBook
           : book
       )
     );
@@ -159,6 +199,8 @@ function App() {
                     book={book} 
                     onDelete={handleDeleteClick}
                     onUpdateStatus={handleUpdateStatus}
+                    onUpdateCurrentPage={handleUpdateCurrentPage}
+                    onEdit={handleEditClick}
                   />
                 ))}
               </div>
@@ -177,6 +219,13 @@ function App() {
         }
         onConfirm={handleConfirmDelete}
         onCancel={handleCancelDelete}
+      />
+
+      <EditBookDialog
+        isOpen={editDialogOpen}
+        book={bookToEdit}
+        onSave={handleEditBook}
+        onCancel={handleCancelEdit}
       />
     </div>
   );

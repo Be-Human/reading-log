@@ -11,6 +11,8 @@ export interface Book {
   title: string;
   author?: string;
   description?: string;
+  totalPages?: number;
+  currentPage?: number;
   createdAt: number;
   status: ReadingStatus;
 }
