@@ -1,11 +1,29 @@
-import type { Book } from '../types/book';
+import { useState } from 'react';
+import type { Book, ReadingStatus } from '../types/book';
+import { READING_STATUS_LABELS } from '../types/book';
 
 interface BookCardProps {
   book: Book;
   onDelete: (book: Book) => void;
+  onUpdateStatus: (bookId: string, newStatus: ReadingStatus) => void;
 }
 
-function BookCard({ book, onDelete }: BookCardProps) {
+const getStatusColor = (status: ReadingStatus): string => {
+  switch (status) {
+    case 'want':
+      return 'status-want';
+    case 'reading':
+      return 'status-reading';
+    case 'read':
+      return 'status-read';
+    default:
+      return '';
+  }
+};
+
+function BookCard({ book, onDelete, onUpdateStatus }: BookCardProps) {
+  const [showStatusSelector, setShowStatusSelector] = useState(false);
+
   const formatDate = (timestamp: number): string => {
     const date = new Date(timestamp);
     return date.toLocaleDateString('zh-CN', {
@@ -13,6 +31,11 @@ function BookCard({ book, onDelete }: BookCardProps) {
       month: 'long',
       day: 'numeric'
     });
+  };
+
+  const handleStatusChange = (newStatus: ReadingStatus) => {
+    onUpdateStatus(book.id, newStatus);
+    setShowStatusSelector(false);
   };
 
   return (
@@ -40,6 +63,28 @@ function BookCard({ book, onDelete }: BookCardProps) {
         <span className="create-date">
           添加时间：{formatDate(book.createdAt)}
         </span>
+        <div className="status-container">
+          <button
+            className={`status-badge ${getStatusColor(book.status)}`}
+            onClick={() => setShowStatusSelector(!showStatusSelector)}
+            aria-label="切换阅读状态"
+          >
+            {READING_STATUS_LABELS[book.status]}
+          </button>
+          {showStatusSelector && (
+            <div className="status-selector">
+              {(['want', 'reading', 'read'] as ReadingStatus[]).map((status) => (
+                <button
+                  key={status}
+                  className={`status-option ${book.status === status ? 'active' : ''}`}
+                  onClick={() => handleStatusChange(status)}
+                >
+                  {READING_STATUS_LABELS[status]}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

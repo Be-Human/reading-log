@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import type { Book } from '../types/book';
+import type { Book, ReadingStatus } from '../types/book';
+import { READING_STATUS_LABELS } from '../types/book';
 import { generateId } from '../utils/localStorage';
 
 interface BookFormProps {
@@ -10,6 +11,7 @@ function BookForm({ onAddBook }: BookFormProps) {
   const [title, setTitle] = useState('');
   const [author, setAuthor] = useState('');
   const [description, setDescription] = useState('');
+  const [status, setStatus] = useState<ReadingStatus>('want');
   const [titleError, setTitleError] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -25,7 +27,8 @@ function BookForm({ onAddBook }: BookFormProps) {
       title: title.trim(),
       author: author.trim() || undefined,
       description: description.trim() || undefined,
-      createdAt: Date.now()
+      createdAt: Date.now(),
+      status
     };
     
     onAddBook(newBook);
@@ -33,6 +36,7 @@ function BookForm({ onAddBook }: BookFormProps) {
     setTitle('');
     setAuthor('');
     setDescription('');
+    setStatus('want');
     setTitleError(false);
   };
 
@@ -80,6 +84,20 @@ function BookForm({ onAddBook }: BookFormProps) {
             placeholder="请输入简介（可选）"
             rows={3}
           />
+        </div>
+        
+        <div className="form-group">
+          <label htmlFor="status">阅读状态</label>
+          <select
+            id="status"
+            value={status}
+            onChange={(e) => setStatus(e.target.value as ReadingStatus)}
+            className="status-select"
+          >
+            <option value="want">{READING_STATUS_LABELS.want}</option>
+            <option value="reading">{READING_STATUS_LABELS.reading}</option>
+            <option value="read">{READING_STATUS_LABELS.read}</option>
+          </select>
         </div>
         
         <button type="submit" className="add-button">
