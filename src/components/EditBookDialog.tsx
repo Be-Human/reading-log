@@ -69,6 +69,7 @@ function EditBookDialog({ isOpen, book, onSave, onCancel }: EditBookDialogProps)
       };
       
       onSave(updatedBook);
+      onCancel();
     }
   };
 
