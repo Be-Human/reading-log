@@ -1,22 +1,63 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import BookForm from './components/BookForm';
 import BookCard from './components/BookCard';
 import ConfirmDialog from './components/ConfirmDialog';
-import type { Book } from './types/book';
+import type { Book, ReadingStatus } from './types/book';
+import { READING_STATUS_LABELS } from './types/book';
 import { saveBooks, loadBooks } from './utils/localStorage';
 import './App.css';
 
+type FilterStatus = 'all' | ReadingStatus;
+
 function App() {
-  const [books, setBooks] = useState<Book[]>(() => loadBooks());
+  const [books, setBooks] = useState<Book[]>(() => {
+    const savedBooks = loadBooks();
+    return savedBooks.map(book => ({
+      ...book,
+      status: (book as any).status || 'want'
+    }));
+  });
   const [dialogOpen, setDialogOpen] = useState(false);
   const [bookToDelete, setBookToDelete] = useState<Book | null>(null);
+  const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
 
   useEffect(() => {
     saveBooks(books);
   }, [books]);
 
+  const statusCounts = useMemo(() => {
+    const counts: Record<ReadingStatus, number> = {
+      want: 0,
+      reading: 0,
+      read: 0
+    };
+    
+    books.forEach(book => {
+      counts[book.status]++;
+    });
+    
+    return counts;
+  }, [books]);
+
+  const filteredBooks = useMemo(() => {
+    if (filterStatus === 'all') {
+      return books;
+    }
+    return books.filter(book => book.status === filterStatus);
+  }, [books, filterStatus]);
+
   const handleAddBook = (newBook: Book) => {
     setBooks((prevBooks) => [newBook, ...prevBooks]);
+  };
+
+  const handleUpdateStatus = (bookId: string, newStatus: ReadingStatus) => {
+    setBooks((prevBooks) => 
+      prevBooks.map(book => 
+        book.id === bookId 
+          ? { ...book, status: newStatus }
+          : book
+      )
+    );
   };
 
   const handleDeleteClick = (book: Book) => {
@@ -37,7 +78,18 @@ function App() {
     setBookToDelete(null);
   };
 
-  const sortedBooks = [...books].sort((a, b) => b.createdAt - a.createdAt);
+  const sortedBooks = [...filteredBooks].sort((a, b) => b.createdAt - a.createdAt);
+
+  const getFilterButtonClass = (status: FilterStatus) => {
+    let baseClass = 'filter-button';
+    if (filterStatus === status) {
+      baseClass += ' active';
+    }
+    if (status !== 'all') {
+      baseClass += ` filter-${status}`;
+    }
+    return baseClass;
+  };
 
   return (
     <div className="app-container">
@@ -55,7 +107,34 @@ function App() {
           <section className="books-section">
             <div className="section-header">
               <h2>我的书单</h2>
-              <span className="book-count">{books.length} 本书</span>
+              <span className="book-count">{filteredBooks.length} 本书</span>
+            </div>
+            
+            <div className="filter-container">
+              <button
+                className={getFilterButtonClass('all')}
+                onClick={() => setFilterStatus('all')}
+              >
+                全部 ({books.length})
+              </button>
+              <button
+                className={getFilterButtonClass('want')}
+                onClick={() => setFilterStatus('want')}
+              >
+                {READING_STATUS_LABELS.want} ({statusCounts.want})
+              </button>
+              <button
+                className={getFilterButtonClass('reading')}
+                onClick={() => setFilterStatus('reading')}
+              >
+                {READING_STATUS_LABELS.reading} ({statusCounts.reading})
+              </button>
+              <button
+                className={getFilterButtonClass('read')}
+                onClick={() => setFilterStatus('read')}
+              >
+                {READING_STATUS_LABELS.read} ({statusCounts.read})
+              </button>
             </div>
 
             {sortedBooks.length === 0 ? (
@@ -66,7 +145,12 @@ function App() {
             ) : (
               <div className="books-grid">
                 {sortedBooks.map((book) => (
-                  <BookCard key={book.id} book={book} onDelete={handleDeleteClick} />
+                  <BookCard 
+                    key={book.id} 
+                    book={book} 
+                    onDelete={handleDeleteClick}
+                    onUpdateStatus={handleUpdateStatus}
+                  />
                 ))}
               </div>
             )}
