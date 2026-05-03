@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import type { Book, ReadingStatus } from '../types/book';
+import type { Book, ReadingStatus, Rating } from '../types/book';
 import { READING_STATUS_LABELS } from '../types/book';
 
 interface BookCardProps {
@@ -108,6 +108,21 @@ function BookCard({ book, onDelete, onUpdateStatus, onUpdateCurrentPage, onEdit 
     ? Math.min(100, Math.max(0, ((book.currentPage || 0) / book.totalPages) * 100))
     : 0;
 
+  const renderStars = (rating: Rating) => {
+    return (
+      <div className="rating-stars" title={`${rating}星`}>
+        {[1, 2, 3, 4, 5].map((star) => (
+          <span 
+            key={star} 
+            className={`star ${star <= rating ? 'filled' : 'empty'}`}
+          >
+            ★
+          </span>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className="book-card">
       <div className="book-card-header">
@@ -134,8 +149,21 @@ function BookCard({ book, onDelete, onUpdateStatus, onUpdateCurrentPage, onEdit 
         <p className="book-author">作者：{book.author}</p>
       )}
       
+      {book.rating && book.status === 'read' && (
+        <div className="book-rating">
+          {renderStars(book.rating)}
+        </div>
+      )}
+      
       {book.description && (
         <p className="book-description">{book.description}</p>
+      )}
+      
+      {book.review && book.status === 'read' && (
+        <div className="book-review">
+          <p className="review-label">读后感：</p>
+          <p className="review-content">{book.review}</p>
+        </div>
       )}
       
       {book.totalPages && book.totalPages > 0 && (
