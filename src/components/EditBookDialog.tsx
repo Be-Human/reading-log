@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { Book } from '../types/book';
+import type { Book, Rating } from '../types/book';
 
 interface EditBookDialogProps {
   isOpen: boolean;
@@ -13,6 +13,8 @@ function EditBookDialog({ isOpen, book, onSave, onCancel }: EditBookDialogProps)
   const [author, setAuthor] = useState('');
   const [description, setDescription] = useState('');
   const [totalPages, setTotalPages] = useState('');
+  const [rating, setRating] = useState<Rating | undefined>(undefined);
+  const [review, setReview] = useState('');
   const [titleError, setTitleError] = useState(false);
 
   useEffect(() => {
@@ -21,6 +23,8 @@ function EditBookDialog({ isOpen, book, onSave, onCancel }: EditBookDialogProps)
       setAuthor(book.author || '');
       setDescription(book.description || '');
       setTotalPages(book.totalPages?.toString() || '');
+      setRating(book.rating);
+      setReview(book.review || '');
       setTitleError(false);
     }
   }, [book]);
@@ -65,7 +69,9 @@ function EditBookDialog({ isOpen, book, onSave, onCancel }: EditBookDialogProps)
         author: author.trim() || undefined,
         description: description.trim() || undefined,
         totalPages: parsedTotalPages,
-        currentPage: parsedTotalPages && book.status === 'read' ? parsedTotalPages : book.currentPage
+        currentPage: parsedTotalPages && book.status === 'read' ? parsedTotalPages : book.currentPage,
+        rating: book.status === 'read' ? rating : undefined,
+        review: book.status === 'read' ? (review.trim() || undefined) : undefined
       };
       
       onSave(updatedBook);
@@ -140,6 +146,48 @@ function EditBookDialog({ isOpen, book, onSave, onCancel }: EditBookDialogProps)
                 min="1"
               />
             </div>
+            
+            {book.status === 'read' && (
+              <>
+                <div className="form-group">
+                  <label>评分（1-5星）</label>
+                  <div className="rating-selector">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        className={`rating-star ${rating && rating >= star ? 'selected' : ''}`}
+                        onClick={() => setRating(star as Rating)}
+                        aria-label={`${star}星`}
+                      >
+                        ★
+                      </button>
+                    ))}
+                    {rating && (
+                      <button
+                        type="button"
+                        className="clear-rating"
+                        onClick={() => setRating(undefined)}
+                        aria-label="清除评分"
+                      >
+                        清除
+                      </button>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="form-group">
+                  <label htmlFor="edit-review">读后感</label>
+                  <textarea
+                    id="edit-review"
+                    value={review}
+                    onChange={(e) => setReview(e.target.value)}
+                    placeholder="请输入读后感（可选）"
+                    rows={4}
+                  />
+                </div>
+              </>
+            )}
           </div>
           
           <div className="dialog-footer">

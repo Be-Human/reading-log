@@ -6,6 +6,8 @@ export const READING_STATUS_LABELS: Record<ReadingStatus, string> = {
   read: '已读'
 };
 
+export type Rating = 1 | 2 | 3 | 4 | 5;
+
 export interface Book {
   id: string;
   title: string;
@@ -15,4 +17,6 @@ export interface Book {
   currentPage?: number;
   createdAt: number;
   status: ReadingStatus;
+  rating?: Rating;
+  review?: string;
 }

@@ -9,6 +9,8 @@ import { saveBooks, loadBooks } from './utils/localStorage';
 import './App.css';
 
 type FilterStatus = 'all' | ReadingStatus;
+type SortBy = 'createdAt' | 'title' | 'progress';
+type SortOrder = 'asc' | 'desc';
 
 function App() {
   const [books, setBooks] = useState<Book[]>(() => {
@@ -16,7 +18,9 @@ function App() {
     return savedBooks.map(book => ({
       ...book,
       status: (book as any).status || 'want',
-      currentPage: (book as any).currentPage || 0
+      currentPage: (book as any).currentPage || 0,
+      rating: (book as any).rating,
+      review: (book as any).review
     }));
   });
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -24,6 +28,9 @@ function App() {
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [bookToEdit, setBookToEdit] = useState<Book | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<SortBy>('createdAt');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
 
   const handleEditClick = (book: Book) => {
     setBookToEdit(book);
@@ -53,12 +60,71 @@ function App() {
     return counts;
   }, [books]);
 
+  const statistics = useMemo(() => {
+    const totalBooks = books.length;
+    
+    let completedPages = 0;
+    books.forEach(book => {
+      if (book.status === 'read' && book.totalPages) {
+        completedPages += book.totalPages;
+      }
+    });
+    
+    return {
+      totalBooks,
+      statusCounts,
+      completedPages
+    };
+  }, [books, statusCounts]);
+
   const filteredBooks = useMemo(() => {
-    if (filterStatus === 'all') {
-      return books;
+    let result = books;
+    
+    // 按状态筛选
+    if (filterStatus !== 'all') {
+      result = result.filter(book => book.status === filterStatus);
     }
-    return books.filter(book => book.status === filterStatus);
-  }, [books, filterStatus]);
+    
+    // 按搜索关键词筛选（书名或作者）
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      result = result.filter(book => 
+        book.title.toLowerCase().includes(query) || 
+        (book.author && book.author.toLowerCase().includes(query))
+      );
+    }
+    
+    return result;
+  }, [books, filterStatus, searchQuery]);
+
+  const sortedBooks = useMemo(() => {
+    const sorted = [...filteredBooks];
+    
+    const getProgress = (book: Book): number => {
+      if (!book.totalPages || book.totalPages === 0) return 0;
+      return ((book.currentPage || 0) / book.totalPages) * 100;
+    };
+    
+    sorted.sort((a, b) => {
+      let comparison = 0;
+      
+      switch (sortBy) {
+        case 'createdAt':
+          comparison = a.createdAt - b.createdAt;
+          break;
+        case 'title':
+          comparison = a.title.localeCompare(b.title, 'zh-CN');
+          break;
+        case 'progress':
+          comparison = getProgress(a) - getProgress(b);
+          break;
+      }
+      
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+    
+    return sorted;
+  }, [filteredBooks, sortBy, sortOrder]);
 
   const handleAddBook = (newBook: Book) => {
     setBooks((prevBooks) => [newBook, ...prevBooks]);
@@ -118,8 +184,6 @@ function App() {
     setBookToDelete(null);
   };
 
-  const sortedBooks = [...filteredBooks].sort((a, b) => b.createdAt - a.createdAt);
-
   const getFilterButtonClass = (status: FilterStatus) => {
     let baseClass = 'filter-button';
     if (filterStatus === status) {
@@ -139,6 +203,29 @@ function App() {
       </header>
 
       <main className="main-content">
+        <div className="statistics-section">
+          <div className="stat-card">
+            <div className="stat-value">{statistics.totalBooks}</div>
+            <div className="stat-label">总书数</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-value want">{statistics.statusCounts.want}</div>
+            <div className="stat-label">想读</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-value reading">{statistics.statusCounts.reading}</div>
+            <div className="stat-label">在读</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-value read">{statistics.statusCounts.read}</div>
+            <div className="stat-label">已读</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-value">{statistics.completedPages}</div>
+            <div className="stat-label">已完成页数</div>
+          </div>
+        </div>
+
         <div className="content-grid">
           <aside className="form-section">
             <BookForm onAddBook={handleAddBook} />
@@ -148,6 +235,46 @@ function App() {
             <div className="section-header">
               <h2>我的书单</h2>
               <span className="book-count">{filteredBooks.length} 本书</span>
+            </div>
+            
+            <div className="search-sort-container">
+              <div className="search-input-wrapper">
+                <input
+                  type="text"
+                  className="search-input"
+                  placeholder="搜索书名或作者..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                {searchQuery && (
+                  <button 
+                    className="clear-search"
+                    onClick={() => setSearchQuery('')}
+                    aria-label="清除搜索"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+              
+              <div className="sort-controls">
+                <select
+                  className="sort-select"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as SortBy)}
+                >
+                  <option value="createdAt">按添加时间</option>
+                  <option value="title">按书名字母</option>
+                  <option value="progress">按阅读进度</option>
+                </select>
+                <button
+                  className="sort-order-button"
+                  onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                  aria-label={sortOrder === 'asc' ? '升序' : '降序'}
+                >
+                  {sortOrder === 'asc' ? '↑' : '↓'}
+                </button>
+              </div>
             </div>
             
             <div className="filter-container">
