@@ -311,6 +311,11 @@ function App() {
                     <p>还没有添加任何书籍</p>
                     <p className="empty-hint">在左侧表单中添加你的第一本书吧！</p>
                   </>
+                ) : searchQuery.trim() ? (
+                  <>
+                    <p>搜索无结果</p>
+                    <p className="empty-hint">没有找到包含「{searchQuery.trim()}」的书籍，请尝试其他关键词</p>
+                  </>
                 ) : (
                   <>
                     <p>该状态下暂无书籍</p>
