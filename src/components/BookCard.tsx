@@ -18,7 +18,7 @@ function BookCard({ book, onDelete }: BookCardProps) {
   return (
     <div className="book-card">
       <div className="book-card-header">
-        <h3 className="book-title">{book.title}</h3>
+        <h3 className="book-title" title={book.title}>{book.title}</h3>
         <button 
           className="delete-button"
           onClick={() => onDelete(book)}
